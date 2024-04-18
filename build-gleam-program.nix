@@ -7,17 +7,21 @@
 , linkFarm
 , makeWrapper
 , rebar3
-, stdenvNoCC
+, stdenv
 }:
 let readTOML = path: builtins.fromTOML (builtins.readFile path); in
-{ src, bin-name ? (readTOML (src + "/gleam.toml")).name, doCheck ? true }:
+{ src
+, package-root ? "."
+, bin-name ? (readTOML (src + "/${package-root}/gleam.toml")).name
+, doCheck ? builtins.pathExists (src + "/${package-root}/test")
+}:
 
 let
-  gleam-toml = readTOML (src + "/gleam.toml");
-  manifest-toml = readTOML (src + "/manifest.toml");
+  gleam-toml = readTOML (src + "/${package-root}/gleam.toml");
+  manifest-toml = readTOML (src + "/${package-root}/manifest.toml");
 
   link-farm-package-entries = map
-    ({ name, version, source, ... }@package:
+    ({ name, version ? "0.1.0", source, ... }@package:
       if source == "hex" then
         let
           path = fetchHex {
@@ -28,12 +32,13 @@ let
         in
         { inherit name path; }
       else if source == "local" then
-        { inherit name; inherit (package) path; }
+        { inherit name; path = src + "/${package-root}/${package.path}"; }
       else throw "gleam2nix: unsupported dependency source: ${source}"
     )
     manifest-toml.packages;
 
-  inherit (gleam-toml) name version;
+  inherit (gleam-toml) name;
+  version = gleam-toml.version or "0.1.0";
   packages-name = "${name}-${version}-packages";
 
   packages-toml.packages = builtins.listToAttrs
@@ -50,7 +55,7 @@ let
 
   all-build-tools = lib.flatten (map (p: p.build_tools) manifest-toml.packages);
 in
-stdenvNoCC.mkDerivation {
+stdenv.mkDerivation {
   pname = name;
   inherit version src;
   nativeBuildInputs = [ erlang gleam makeWrapper ] ++
@@ -62,6 +67,7 @@ stdenvNoCC.mkDerivation {
   configurePhase = ''
     runHook preConfigure
 
+    cd ${package-root}
     rm -rf build
     mkdir build
     cp -r --no-preserve=mode --dereference ${build-packages} build/packages
