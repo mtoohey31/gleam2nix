@@ -1,4 +1,5 @@
-{ elixir
+{ beamPackages
+, elixir
 , erlang
 , fetchHex
 , formats
@@ -58,12 +59,15 @@ in
 stdenv.mkDerivation {
   pname = name;
   inherit version src;
-  nativeBuildInputs = [ erlang gleam makeWrapper ] ++
-    lib.optional (builtins.elem "mix" all-build-tools) elixir ++
-    lib.optional
-      (builtins.elem "rebar" all-build-tools ||
-        builtins.elem "rebar3" all-build-tools)
-      rebar3;
+  nativeBuildInputs =
+    let
+      mix = builtins.elem "mix" all-build-tools;
+      rebar = builtins.elem "rebar" all-build-tools ||
+        builtins.elem "rebar3" all-build-tools;
+    in
+    [ erlang gleam makeWrapper ] ++
+    lib.optionals mix [ elixir beamPackages.hex ] ++
+    lib.optional rebar rebar3;
   configurePhase = ''
     runHook preConfigure
 
