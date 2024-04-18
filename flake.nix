@@ -40,5 +40,10 @@
             }));
 
     overlays.default = import ./overlay.nix;
+
+    templates.default = {
+      description = "A simple Gleam project.";
+      path = ./template;
+    };
   };
 }
