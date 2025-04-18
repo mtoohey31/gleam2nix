@@ -71,6 +71,15 @@ stdenv.mkDerivation {
   configurePhase = ''
     runHook preConfigure
 
+    export HEX_HOME="$TEMPDIR/hex"
+    export HEX_OFFLINE=1
+    export MIX_REBAR3='${beamPackages.rebar3}/bin/rebar3'
+    export REBAR_GLOBAL_CONFIG_DIR="$TEMPDIR/rebar3"
+    export REBAR_CACHE_DIR="$TEMPDIR/rebar3.cache"
+    export MIX_HOME="$TEMPDIR/mix"
+    export MIX_DEPS_PATH="$TEMPDIR/deps"
+    export MIX_ENV=prod
+
     cd ${package-root}
     rm -rf build
     mkdir build
