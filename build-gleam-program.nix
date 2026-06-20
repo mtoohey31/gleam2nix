@@ -1,13 +1,9 @@
 { beamPackages
-, elixir
-, erlang
-, fetchHex
 , formats
 , gleam
 , lib
 , linkFarm
 , makeWrapper
-, rebar3
 , stdenv
 }:
 let readTOML = path: builtins.fromTOML (builtins.readFile path); in
@@ -25,7 +21,7 @@ let
     ({ name, version ? "0.1.0", source, ... }@package:
       if source == "hex" then
         let
-          path = fetchHex {
+          path = beamPackages.fetchHex {
             pkg = name;
             inherit version;
             sha256 = package.outer_checksum;
@@ -65,9 +61,9 @@ stdenv.mkDerivation {
       rebar = builtins.elem "rebar" all-build-tools ||
         builtins.elem "rebar3" all-build-tools;
     in
-    [ erlang gleam makeWrapper ] ++
-    lib.optionals mix [ elixir beamPackages.hex ] ++
-    lib.optional rebar rebar3;
+    [ beamPackages.erlang gleam makeWrapper ] ++
+    lib.optionals mix [ beamPackages.elixir beamPackages.hex ] ++
+    lib.optional rebar beamPackages.rebar3;
   configurePhase = ''
     runHook preConfigure
 
@@ -109,7 +105,7 @@ stdenv.mkDerivation {
     cp -r build/erlang-shipment $out/share/gleam/${name}
     makeWrapper $out/share/gleam/${name}/entrypoint.sh \
       $out/bin/${bin-name} --add-flags run \
-      --prefix PATH : ${erlang}/bin
+      --prefix PATH : ${beamPackages.erlang}/bin
 
     runHook postInstall
   '';
